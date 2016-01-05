@@ -1,0 +1,28 @@
+{
+  "name": "express-lembro",
+  "version": "1.0.0",
+  "description": "A production-ready in-memory express-session compatible session store.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/scottoffen/express-lembro.git"
+  },
+  "keywords": [
+    "express",
+    "session",
+    "store",
+    "memory"
+  ],
+  "author": "Scott Offen",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/scottoffen/express-lembro/issues"
+  },
+  "homepage": "https://github.com/scottoffen/express-lembro#readme",
+  "dependencies": {
+    "sizeomatic": "^1.0.1"
+  }
+}
