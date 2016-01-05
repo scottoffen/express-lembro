@@ -132,6 +132,8 @@ module.exports = function (connect)
 
     callback && defer(callback);
   };
+
+  return Lembro;
 };
 
 function getSession(sessionId)
