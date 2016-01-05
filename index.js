@@ -1,5 +1,5 @@
-var util = require('util')
 var sizeomatic = require('sizeomatic');
+var EventEmitter = require('events').EventEmitter;
 
 var defer = (typeof setImmediate === 'function') ? setImmediate : function(fn){ process.nextTick(fn.bind.apply(fn, arguments)) };
 
@@ -10,6 +10,10 @@ module.exports = function (connect)
 
   function Lembro (options, callback)
   {
+    this._emitter = new EventEmitter();
+    this._errorHandler = handleError.bind(this);
+
+
     if (typeof options === 'function')
     {
       callback = options;
@@ -37,7 +41,7 @@ module.exports = function (connect)
     return callback && callback();
   }
 
-  util.inherits(Lembro, Store);
+  Lembro.prototype = Object.create(Store.prototype);
 
   Lembro.prototype.all = function (callback)
   {
@@ -94,6 +98,16 @@ module.exports = function (connect)
 
       callback(null, count);
     });
+  };
+
+  Lembro.prototype.on = function()
+  {
+    this._emitter.on.apply(this._emitter, arguments);
+  };
+
+  Lembro.prototype.once = function()
+  {
+    this._emitter.once.apply(this._emitter, arguments);
   };
 
   Lembro.prototype.set = function set(sessionId, session, callback)
@@ -183,4 +197,22 @@ function getSessionAges (sessions)
   });
 
   return sessionAges;
+}
+
+function handleError(error, callback)
+{
+  if (this._emitter.listeners('error').length)
+  {
+    this._emitter.emit('error', error);
+  }
+
+  if (callback)
+  {
+    callback(error);
+  }
+
+  if (!this._emitter.listeners('error').length && !callback)
+  {
+    throw error;
+  }
 }
