@@ -1,6 +1,6 @@
 {
   "name": "express-lembro",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A production-ready in-memory express-session compatible session store.",
   "main": "index.js",
   "scripts": {
