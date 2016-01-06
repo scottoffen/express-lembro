@@ -14,7 +14,7 @@ designed for a production environment, as it will leak
 memory, and obviously only work within a single process.
 ```
 
-And if you are looking at this module, you are likely asking: what do I do if I need server-side in-memory session storage that **doesn't need to scale** past a single process?
+And if you are looking at this module, you are likely asking: what do I do if I **_want_** server-side in-memory session storage that **doesn't need to scale** past a single process?
 
 Answer: Use `express-lembro`.
 
