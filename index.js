@@ -1,3 +1,4 @@
+var debug = require('debug')('express-lembro');
 var sizeomatic = require('sizeomatic');
 var EventEmitter = require('events').EventEmitter;
 
@@ -173,6 +174,8 @@ function getSession(sessionId)
 
 function reduce (sessions, callback)
 {
+  debug('reduce: start ' + sizeomatic.pretty(this._size));
+
   var sessionAges = getSessionAges(sessions);
   var targetSize = this.options.maxSize * 0.75;
 
@@ -181,6 +184,8 @@ function reduce (sessions, callback)
     var oldestSession = sessionAges.pop();
     this.destroy(oldestSession.id);
   }
+
+  debug('reduce: done ' + sizeomatic.pretty(this._size));
 
   callback && defer(callback)
 }

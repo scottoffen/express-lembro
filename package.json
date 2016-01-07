@@ -1,7 +1,7 @@
 {
   "name": "express-lembro",
   "version": "1.0.2",
-  "description": "A production-ready in-memory express-session compatible session store.",
+  "description": "The it's-not-meant-to-scale-and-it-doesn't-leak-memory express session store.",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -23,6 +23,7 @@
   },
   "homepage": "https://github.com/scottoffen/express-lembro#readme",
   "dependencies": {
+    "debug": "^2.2.0",
     "sizeomatic": "^1.0.1"
   }
 }
