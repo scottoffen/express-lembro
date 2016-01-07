@@ -117,14 +117,16 @@ module.exports = function (connect)
     var currentSessionSize = sizeomatic.getSize(this.sessions[sessionId]);
     var newSessionSize = sizeomatic.getSize(sessionData);
 
-    if ((this.options.maxSize > 0) && (newSessionSize > currentSessionSize))
+    if ((this.options.maxSize > 0) && (newSessionSize > currentSessionSize) && (this.options.maxSize < (this._size + (newSessionSize - currentSessionSize))))
     {
       var self = this;
-      this.all(function(err, sessions)
+      this.all(function (sessions)
       {
-        reduce.call(self, sessions, newSessionSize - currentSessionSize);
-        self.sessions[sessionId] = sessionData;
-        callback && defer(callback);
+        reduce.call(this, sessions, function ()
+        {
+          self.sessions[sessionId] = sessionData;
+          callback && defer(callback);
+        });
       });
     }
     else
@@ -169,15 +171,18 @@ function getSession(sessionId)
   return session;
 }
 
-function reduce (sessions, reduceBy)
+function reduce (sessions, callback)
 {
   var sessionAges = getSessionAges(sessions);
+  var targetSize = this.options.maxSize * 0.75;
 
-  while ((sessionAges.length > 0) && (this.options.maxSize < (this._size + reduceBy)))
+  while ((sessionAges.length > 0) && (this._size > targetSize)
   {
     var oldestSession = sessionAges.pop();
     this.destroy(oldestSession.id);
   }
+
+  callback && defer(callback)
 }
 
 function getSessionAges (sessions)
