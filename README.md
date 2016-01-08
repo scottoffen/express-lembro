@@ -64,7 +64,7 @@ The [sizeomatic](https://www.npmjs.com/package/sizeomatic) module is used to det
 
 ## Methods ##
 
-`express-lembro` exposes **all required and optional** methods for a [session store implementation](https://www.npmjs.com/package/express-session#session-store-implementation) - recreated below in case `express-session` changes it's expected interface in the future.
+`express-lembro` exposes **all required and optional** methods for a [session store implementation](https://www.npmjs.com/package/express-session#session-store-implementation) - the requirement for which I have painstakingly recreated below in case `express-session` changes it's expected interface in the future.
 
 ### store.all(callback) ###
 
@@ -116,13 +116,13 @@ This is primarily used when the store will automatically delete idle sessions an
 
 The only method instrumented for debugging is the call to the private `reduce()` method, using the [`debug`](https://www.npmjs.com/package/debug) module. Messages displayed include a message with the starting cache size and another with the ending cache size.
 
-## Memory Usage and Scaling with express-session and MemoryStore ##
+## `MemoryStore`, Memory Usage and Scaling ##
 
-If you've used [express-session](https://www.npmjs.com/package/express-session), then you've likely already seen this from their documentation:
+If you've used [express-session](https://www.npmjs.com/package/express-session), then you've likely already seen this warning from their documentation:
 
 > **Warning** The default server-side session storage, `MemoryStore`, is *purposely* not designed for a production environment. It will leak memory under most conditions, does not scale past a single process, and is meant for debugging and developing.
 
-And if you tried to run it production anyway, and you get this error:
+And if you tried to run it production anyway, you saw an error like this:
 
 ```
 Warning: connection.session() MemoryStore is not
@@ -130,9 +130,9 @@ designed for a production environment, as it will leak
 memory, and obviously only work within a single process.
 ```
 
-Sounds ominous, right?
+That sounds ominous, right?
 
-### Except MemoryStore Doesn't *Actually* Leak Memory ###
+### Except `MemoryStore` Doesn't *Actually* Leak Memory ###
 
 The reality is that `MemoryStore` doesn't [leak memory in the way you might expect](https://en.wikipedia.org/wiki/Memory_leak), but rather has the same effect as a memory leak in that it can diminish the performance of your application by reducing the amount of available memory. This happens in two ways:
 
