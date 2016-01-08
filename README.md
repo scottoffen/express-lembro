@@ -2,39 +2,13 @@
 
 *It's not meant to scale and it doesn't leak memory.*
 
-If you've used [express-session](https://www.npmjs.com/package/express-session), they you've likely already seen this from their documentation:
-
-> **Warning** The default server-side session storage, `MemoryStore`, is *purposely* not designed for a production environment. It will leak memory under most conditions, does not scale past a single process, and is meant for debugging and developing.
-
-You likely tried to run it production anyway, and you go this error:
-
-```
-Warning: connection.session() MemoryStore is not
-designed for a production environment, as it will leak
-memory, and obviously only work within a single process.
-```
-
-And if you are looking at this module, you are likely asking: what do I do if I **_want_** server-side in-memory session storage that **doesn't need to scale** past a single process?
-
-Answer: Use `express-lembro`.
-
 ```
 $ npm install express-lembro
 ```
 
-### Comparison ###
+If you are looking at this module, you are likely looking for an answer to the question: what if I **_want_** server-side in-memory session storage that doesn't need to scale past a single process?
 
-This module aims to fill the niche where you want production-ready in-memory session storage that doesn't need to scale - which is probably a small niche. Use this comparison chart to help determine if you are in that niche.
-
-| `MemoryStore` | `express-lembro` |
-|---------------|------------------|
-| Will not scale past a single process | Will not scale past a single process |
-| Sessions lost on server restart | Sessions lost on server restart |
-| Leaks memory by not purging expired sessions | Purges expired sessions at a configurable interval |
-| Unbounded cache size | Configurable cache size restrictions |
-
-- If you need something that will scale beyond a single process, use a database.
-- If you really need to scale *and* store sessions in memory, take a look at [connect-redis](https://www.npmjs.com/package/connect-redis).
+**You've come to the right place.**
 
 ## Usage ##
 
@@ -59,7 +33,7 @@ store.on('error', function(error)
 Then pass that store to the `session` middle-ware.
 
 ```javascript
-app.use(session({ store : store}));
+app.use(session({ store : store }));
 ```
 
 Or you can just new one up on the fly.
@@ -70,7 +44,7 @@ app.use(session({ store : new lembro() }));
 
 ### Options ###
 
-The constructor takes an options object and a callback that will be executed once the store has been set up.
+The constructor takes an `options` object and a `callback` that will be executed once the store has been set up.
 
 ```javascript
 new lembro({ interval: 360000, maxSize : '4M' }, function ()
@@ -137,6 +111,55 @@ This required method is used to upsert a session into the store given a session 
 This recommended method is used to "touch" a given session given a session ID (`sid`) and session (`session`) object. The `callback` should be called as `callback(error)` once the session has been touched.
 
 This is primarily used when the store will automatically delete idle sessions and this method is used to signal to the store the given session is active, potentially resetting the idle timer.
+
+## Debugging ##
+
+The only method instrumented for debugging is the call to the private `reduce()` method, using the [`debug`](https://www.npmjs.com/package/debug) module. Messages displayed include a message with the starting cache size and another with the ending cache size.
+
+## Memory Usage and Scaling with express-session and MemoryStore ##
+
+If you've used [express-session](https://www.npmjs.com/package/express-session), then you've likely already seen this from their documentation:
+
+> **Warning** The default server-side session storage, `MemoryStore`, is *purposely* not designed for a production environment. It will leak memory under most conditions, does not scale past a single process, and is meant for debugging and developing.
+
+And if you tried to run it production anyway, and you get this error:
+
+```
+Warning: connection.session() MemoryStore is not
+designed for a production environment, as it will leak
+memory, and obviously only work within a single process.
+```
+
+Sounds ominous, right?
+
+### Except MemoryStore Doesn't *Actually* Leak Memory ###
+
+The reality is that `MemoryStore` doesn't [leak memory in the way you might expect](https://en.wikipedia.org/wiki/Memory_leak), but rather has the same effect as a memory leak in that it can diminish the performance of your application by reducing the amount of available memory. This happens in two ways:
+
+1. **Expired sessions** won't get purged unless you restart your application. Until then, data that will almost certainly never get used again continues taking up valuable memory.
+2. There is **no limit on the amount of memory** `MemoryStore` can consume. So it continues to grow  in size until your application eventually crashes. How long this takes will depend on a number of factors, but left running long enough it will eventually happen.
+
+Pedantic? Perhaps. But **the distinction is important** if we want to solve the problem.
+
+### And Sometimes You Don't *Really* Need To Scale ###
+
+I know we'd all like to think that our apps are going to run the entire world, but the reality is that there are many cases when our apps will never scale beyond a single process. And that's okay.
+
+The most common case I run across is internal [LOB applications](https://en.wikipedia.org/wiki/Line_of_business) that utilize LDAP for authentication and authorization, and often have less than 100 users. In these cases, a session is generated without the user ever seeing a login screen, so if their session gets dropped on the server side, that's okay. We'll simply generate a new session for them without them ever noticing.
+
+### And That's The Niche `express-lembro` Fills ###
+
+This module aims to fill the niche where you want production-ready in-memory session storage that doesn't need to scale - which is admittedly probably a small niche. Use this comparison chart to help determine if you are okay being in that niche.
+
+| `MemoryStore` | `express-lembro` | Other Session Stores |
+|---------------|------------------|----------------------|
+| Will not scale past a single process | Will not scale past a single process | Will most likely scale |
+| Sessions lost on server restart | Sessions lost on server restart | Might persists sessions across application restarts |
+| Leaks memory by not purging expired sessions | Purges expired sessions at a configurable interval | Probably purges sessions |
+| Unbounded cache size | Configurable cache size restrictions | Manages it's own session store size |
+
+- If you need something that will scale beyond a single process, use a database.
+- If you really need to scale *and* store sessions in memory, take a look at [connect-redis](https://www.npmjs.com/package/connect-redis).
 
 ## Acknowledgments ##
 

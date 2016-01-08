@@ -4,6 +4,8 @@ var EventEmitter = require('events').EventEmitter;
 
 var defer = (typeof setImmediate === 'function') ? setImmediate : function(fn){ process.nextTick(fn.bind.apply(fn, arguments)) };
 
+var exports = module.exports = function (){};
+
 module.exports = function (connect)
 {
   var Store = connect.Store || connect.session.Store;
@@ -179,7 +181,7 @@ function reduce (sessions, callback)
   var sessionAges = getSessionAges(sessions);
   var targetSize = this.options.maxSize * 0.75;
 
-  while ((sessionAges.length > 0) && (this._size > targetSize)
+  while ((sessionAges.length > 0) && (this._size > targetSize))
   {
     var oldestSession = sessionAges.pop();
     this.destroy(oldestSession.id);

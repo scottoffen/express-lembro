@@ -4,7 +4,7 @@
   "description": "The it's-not-meant-to-scale-and-it-doesn't-leak-memory express session store.",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "mocha"
   },
   "repository": {
     "type": "git",
@@ -24,6 +24,11 @@
   "homepage": "https://github.com/scottoffen/express-lembro#readme",
   "dependencies": {
     "debug": "^2.2.0",
-    "sizeomatic": "^1.0.1"
+    "sizeomatic": "^1.0.3"
+  },
+  "devDependencies": {
+    "chai": "^3.4.1",
+    "express-session": "^1.12.1",
+    "mocha": "^2.3.4"
   }
 }
