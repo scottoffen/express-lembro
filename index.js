@@ -2,20 +2,19 @@ var debug = require('debug')('express-lembro');
 var sizeomatic = require('sizeomatic');
 var EventEmitter = require('events').EventEmitter;
 
+/* istanbul ignore next */
 var defer = (typeof setImmediate === 'function') ? setImmediate : function(fn){ process.nextTick(fn.bind.apply(fn, arguments)) };
-
-var exports = module.exports = function (){};
 
 module.exports = function (connect)
 {
+  /* istanbul ignore next */
   var Store = connect.Store || connect.session.Store;
-  var defaults = { interval : 60000, maxSize : 1048576 };
+  var defaults = { interval : 360000, maxSize : '4M' };
 
   function Lembro (options, callback)
   {
     this._emitter = new EventEmitter();
     this._errorHandler = handleError.bind(this);
-
 
     if (typeof options === 'function')
     {
@@ -36,10 +35,12 @@ module.exports = function (connect)
 
     Store.call(this, options);
     this.options = options;
-    this.sessions = Object.create(null);
+    this.sessions = {};
 
-    this._cleanup = setInterval(function (store) { store.all(); }, options.interval, this);
+    this._cleanup = setInterval(cleanup.bind(this), options.interval, this);
     this._size = 0;
+
+    this.advanced = { stop: false };
 
     return callback && callback();
   }
@@ -48,37 +49,19 @@ module.exports = function (connect)
 
   Lembro.prototype.all = function (callback)
   {
-    var sessionIds = Object.keys(this.sessions);
-    var sessions = Object.create(null);
-
-    for (var i = 0, l = sessionIds.length; i < l; i += 1)
-    {
-      var sessionId = sessionIds[i];
-      var session = getSession.call(this, sessionId);
-
-      if (session)
-      {
-        sessions[sessionId] = session;
-      }
-    }
-
-    this._size = sizeomatic.getSize(this.sessions);
-
-    callback && defer(callback, null, sessions)
+    callback && defer(callback, null, getAllSessions.call(this));
   };
 
   Lembro.prototype.clear = function clear(callback)
   {
-    this.sessions = Object.create(null);
+    this.sessions = {};
     this._size = 0;
     callback && defer(callback);
   };
 
   Lembro.prototype.destroy = function destroy(sessionId, callback)
   {
-    var size = sizeomatic.getSize(this.sessions[sessionId]);
-    delete this.sessions[sessionId];
-    this._size = this._size - size;
+    deleteSession.call(this, sessionId);
     callback && defer(callback);
   };
 
@@ -91,7 +74,8 @@ module.exports = function (connect)
   {
     this.all(function (err, sessions)
     {
-      if (err) return callback(err);
+      // all is hardcoded to retun null for err
+      // if (err) return callback(err);
 
       var count = 0;
       for (var key in sessions)
@@ -103,38 +87,50 @@ module.exports = function (connect)
     });
   };
 
+  /* istanbul ignore next */
   Lembro.prototype.on = function()
   {
     this._emitter.on.apply(this._emitter, arguments);
   };
 
+  /* istanbul ignore next */
   Lembro.prototype.once = function()
   {
     this._emitter.once.apply(this._emitter, arguments);
   };
 
+  Lembro.prototype.reduce = function (callback)
+  {
+    debug('reduce: start ' + sizeomatic.pretty(this._size));
+
+    var sessions = getSessionAges.call(this);
+    var target   = (this.options.maxSize * 0.75).toFixed(0);
+
+    while ((sessions.length > 1) && (this._size > target))
+    {
+      var oldestSession = sessions.pop();
+      deleteSession.call(this, oldestSession.id);
+    }
+
+    debug('reduce: done ' + sizeomatic.pretty(this._size));
+
+    callback && defer(callback)
+  };
+
   Lembro.prototype.set = function set(sessionId, session, callback)
   {
-    var sessionData = JSON.stringify(session);
+    if (typeof session !== 'string') session = JSON.stringify(session);
+    var sizeDiff = (this.sessions[sessionId]) ? sizeomatic.getSize(session) - this.sessions[sessionId] : sizeomatic.getSize(session);
 
-    var currentSessionSize = sizeomatic.getSize(this.sessions[sessionId]);
-    var newSessionSize = sizeomatic.getSize(sessionData);
+    this.sessions[sessionId] = session;
+    this._size += sizeDiff;
 
-    if ((this.options.maxSize > 0) && (newSessionSize > currentSessionSize) && (this.options.maxSize < (this._size + (newSessionSize - currentSessionSize))))
+    if ((this.options.maxSize > 0) && (this._size > this.options.maxSize))
     {
-      var self = this;
-      this.all(function (sessions)
-      {
-        reduce.call(this, sessions, function ()
-        {
-          self.sessions[sessionId] = sessionData;
-          callback && defer(callback);
-        });
-      });
+      this.reduce(callback);
     }
     else
     {
-      this.sessions[sessionId] = sessionData;
       callback && defer(callback);
     }
   };
@@ -155,10 +151,45 @@ module.exports = function (connect)
   return Lembro;
 };
 
+/* istanbul ignore next */
+function cleanup ()
+{
+  if (this.advanced.stop)
+  {
+    clearInterval(this._cleanup);
+  }
+  else
+  {
+    this.all();
+  }
+};
+
+/* istanbul ignore next */
+function getAllSessions ()
+{
+  var sessionIds = Object.keys(this.sessions);
+  var sessions = {};
+
+  for (var i = 0, l = sessionIds.length; i < l; i += 1)
+  {
+    var sessionId = sessionIds[i];
+    var session = getSession.call(this, sessionId);
+
+    if (session)
+    {
+      sessions[sessionId] = session;
+    }
+  }
+
+  return sessions;
+}
+
+/* istanbul ignore next */
 function getSession(sessionId)
 {
   var session = this.sessions[sessionId];
 
+  /* istanbul ignore next */
   if (!session) { return; }
 
   session = JSON.parse(session);
@@ -167,50 +198,45 @@ function getSession(sessionId)
 
   if (expires && expires <= Date.now())
   {
-    delete this.sessions[sessionId];
+    deleteSession.call(this, sessionId);
     return;
   }
 
   return session;
 }
 
-function reduce (sessions, callback)
+/* istanbul ignore next */
+function getSessionAges ()
 {
-  debug('reduce: start ' + sizeomatic.pretty(this._size));
-
-  var sessionAges = getSessionAges(sessions);
-  var targetSize = this.options.maxSize * 0.75;
-
-  while ((sessionAges.length > 0) && (this._size > targetSize))
-  {
-    var oldestSession = sessionAges.pop();
-    this.destroy(oldestSession.id);
-  }
-
-  debug('reduce: done ' + sizeomatic.pretty(this._size));
-
-  callback && defer(callback)
-}
-
-function getSessionAges (sessions)
-{
+  var sessions = getAllSessions.call(this);
   var sessionAges = [];
 
   for (var key in sessions)
   {
-    sessionAges.push({ id : key, age : sessions[key].expires });
+    sessionAges.push({ id : key, age : sessions[key].cookie.expires });
   }
 
   sessionAges.sort(function (a,b)
   {
-    if (a.age > b.age) return 1;
-    else if (a.age < b.age) return -1;
+    if (a.age > b.age) return -1;
+    else if (a.age < b.age) return 1;
     return 0;
   });
 
   return sessionAges;
 }
 
+/* istanbul ignore next */
+function deleteSession (sessionId)
+{
+  if (this.sessions[sessionId])
+  {
+    this._size = this._size - sizeomatic.getSize(this.sessions[sessionId]);
+    delete this.sessions[sessionId];
+  }
+}
+
+/* istanbul ignore next */
 function handleError(error, callback)
 {
   if (this._emitter.listeners('error').length)

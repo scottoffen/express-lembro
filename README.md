@@ -57,67 +57,24 @@ This example will purge expired sessions every hour and allow a cache size of 4 
 
 | Option   | Default | Description |
 |----------|---------|-------------|
-| interval | 60000   | Number of milliseconds between purging expired sessions
-| maxSize  | 1M      | Maximum (approximate) cache size
+| interval | 360000  | Number of milliseconds between purging expired sessions |
+| maxSize  | 4M      | Maximum (approximate) cache size |
 
 The [sizeomatic](https://www.npmjs.com/package/sizeomatic) module is used to determine the cache size and parse the value of the `maxSize` property - hence the *approximate* caveat.
 
 ## Methods ##
 
-`express-lembro` exposes **all required and optional** methods for a [session store implementation](https://www.npmjs.com/package/express-session#session-store-implementation) - the requirement for which I have painstakingly recreated below in case `express-session` changes it's expected interface in the future.
+In addition to the methods below, `express-lembro` exposes **all required and optional** methods for a [session store implementation](https://www.npmjs.com/package/express-session#session-store-implementation).
 
-### store.all(callback) ###
+### store.reduce(callback) ###
 
-**Optional**
+This method call will reduce the amount of memory being utilized to 75% of the configured maximum (`options.maxSize`). It will be called automatically whenever the session store cache size **exceeds** the configured maximum, so it is not necessary to call it directly.
 
-This optional method is used to get all sessions in the store as an array. The `callback` should be called as `callback(error, sessions)`.
+This is the only method instrumented for debugging using the [`debug`](https://www.npmjs.com/package/debug) module. Messages displayed include a message with the starting cache size and another with the ending cache size.
 
-### store.destroy(sid, callback) ###
+## Memory Usage and Scaling ##
 
-**Required**
-
-This required method is used to destroy/delete a session from the store given a session ID (`sid`). The `callback` should be called as `callback(error)` once the session is destroyed.
-
-### store.clear(callback) ###
-
-**Optional**
-
-This optional method is used to delete all sessions from the store. The `callback` should be called as `callback(error)` once the store is cleared.
-
-### store.length(callback) ###
-
-**Optional**
-
-This optional method is used to get the count of all sessions in the store. The `callback` should be called as `callback(error, len)`.
-
-### store.get(sid, callback) ###
-
-**Required**
-
-This required method is used to get a session from the store given a session ID (`sid`). The `callback` should be called as `callback(error, session)`.
-
-The `session` argument should be a session if found, otherwise `null` or `undefined` if the session was not found (and there was no error). A special case is made when `error.code === 'ENOENT'` to act like `callback(null, null)`.
-
-### store.set(sid, session, callback) ###
-
-**Required**
-
-This required method is used to upsert a session into the store given a session ID (`sid`) and session (`session`) object. The callback should be called as `callback(error)` once the session has been set in the store.
-
-### store.touch(sid, session, callback) ###
-
-**Recommended**
-
-This recommended method is used to "touch" a given session given a session ID (`sid`) and session (`session`) object. The `callback` should be called as `callback(error)` once the session has been touched.
-
-This is primarily used when the store will automatically delete idle sessions and this method is used to signal to the store the given session is active, potentially resetting the idle timer.
-
-## Debugging ##
-
-The only method instrumented for debugging is the call to the private `reduce()` method, using the [`debug`](https://www.npmjs.com/package/debug) module. Messages displayed include a message with the starting cache size and another with the ending cache size.
-
-## `MemoryStore`, Memory Usage and Scaling ##
-
+### The `MemoryStore` Warning ###
 If you've used [express-session](https://www.npmjs.com/package/express-session), then you've likely already seen this warning from their documentation:
 
 > **Warning** The default server-side session storage, `MemoryStore`, is *purposely* not designed for a production environment. It will leak memory under most conditions, does not scale past a single process, and is meant for debugging and developing.

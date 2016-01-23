@@ -4,7 +4,7 @@
   "description": "The it's-not-meant-to-scale-and-it-doesn't-leak-memory express session store.",
   "main": "index.js",
   "scripts": {
-    "test": "mocha"
+    "test": "istanbul cover node_modules/mocha/bin/_mocha -- -R spec"
   },
   "repository": {
     "type": "git",
@@ -29,6 +29,7 @@
   "devDependencies": {
     "chai": "^3.4.1",
     "express-session": "^1.12.1",
+    "istanbul": "^0.4.2",
     "mocha": "^2.3.4"
   }
 }
