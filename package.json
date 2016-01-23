@@ -1,6 +1,6 @@
 {
   "name": "express-lembro",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "The it's-not-meant-to-scale-and-it-doesn't-leak-memory express session store.",
   "main": "index.js",
   "scripts": {
