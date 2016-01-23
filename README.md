@@ -79,7 +79,7 @@ If you've used [express-session](https://www.npmjs.com/package/express-session),
 
 > **Warning** The default server-side session storage, `MemoryStore`, is *purposely* not designed for a production environment. It will leak memory under most conditions, does not scale past a single process, and is meant for debugging and developing.
 
-And if you tried to run it production anyway, you saw an error like this:
+And if you tried to run it in production anyway, you saw an error like this:
 
 ```
 Warning: connection.session() MemoryStore is not
