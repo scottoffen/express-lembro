@@ -1,6 +1,6 @@
 # express-[lembro](https://translate.google.com/#pt/en/lembro) #
 
-`express-lembro` is a package that provides in-memory session storage that isn't meant to scale and doesn't leak memory. Because sometimes that's exactly what you need.
+`express-lembro` is a package that provides in-memory express-session storage that isn't meant to scale and doesn't leak memory. Because sometimes that's exactly what you need.
 
 [![NPM](https://nodei.co/npm/express-lembro.png?downloads=true&downloadRank=true&stars=true)](https://nodei.co/npm/express-lembro/)
 
